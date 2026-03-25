@@ -152,3 +152,62 @@ class SparkDataCheck:
     
     ####################################
     # Summarization Methods
+    # Each summarization method will return the summarization of the data (not an ammended dataframe) as a pandas data frame
+    
+    # Min and Max Summarization Method
+    def report_min_max(self, column = None, group_var = None):
+        '''
+        A summarization method to report the min and max of a numeric column supplied by the user.
+        This method will check if the provided column is numeric. If not, a message will be printed and None returned.
+        If the column is numeric, the min and max of the column will be reported.
+        The user also has the option to add a grouping variable, in which the data will be grouped appropriately and the
+        min and max will be reported.
+        If no column is supplied, the method will report the min and max of any numeric column, and grouped appropriately.
+        '''
+        
+        numeric_types = ["float", "int", "longint", "bigint", "double", "integer"] # Allowed numeric types
+        
+        if column:
+            # Grab the data type of the column provided
+            col_type = None
+            for name, dtype in self.df.dtypes: # Unpacks the list tuple from .dtypes
+                if name == column:
+                    col_type = dtype
+                    break
+            
+            # Logic to check if col_type is in our numeric_types list
+            if col_type is None or not any(type in col_type.lower() for type in numeric_types):
+                print(f"Message: Column '{column}' is non-numeric.")
+                return None
+            target_col = [column]
+            
+        else:
+            #Finds all numeric columns using the unpacking logic
+            target_col = [col for col, type in self.df.dtypes if any(num_type in type.lower() for num_type in numeric_types)]
+            
+        # List to store individual panda data frames
+        pdf_list = []
+        
+        for col in target_col:
+            # Create a small summary for one column
+            working_df = self.df.groupBy(group_var) if group_var else self.df
+            
+            # Perform min and max and convert to Pandas
+            col_summary = working_df.agg(
+                F.min(col).alias(f"{col}_min"),
+                F.max(col).alias(f"{col}_max")
+            ).toPandas()
+            
+            # Append col_summary to pdf list
+            pdf_list.append(col_summary)
+            
+        # Use reduce() from functools to merge all dataframes in the list together
+        # If group_var exists, we merge on that column, otherwise its a simple join
+        if group_var:
+            final_pdf = reduce(lambda left, right: pd.merge(left, right, on = group_var), pdf_list)
+        else:
+            # If no grouping, then side-by-side with axis = 1
+            final_pdf = pd.concat(pdf_list, axis = 1)
+            
+        # Return final pdf
+        return final_pdf
