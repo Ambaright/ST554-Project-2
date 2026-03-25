@@ -62,7 +62,7 @@ class SparkDataCheck:
     #################################
     # Validation methods
     
-    # Create boolean column based on numeric bounds
+    # Create Boolean column based on numeric bounds
     def check_numeric_range(self, column: str, lower: str = None, upper: str = None):
         '''
         Append a Boolean column indicating whether numeric values fall within bound.
@@ -107,7 +107,7 @@ class SparkDataCheck:
         self.df = self.df.withColumn(f"{column}_in_bounds", condition)
         return self
     
-    # Create a boolean column based on string levels
+    # Create a Boolean column based on string levels
     def check_string_levels(self, column, levels):
         '''
         Append a Boolean column indicating whether a user supplied string column falls within a
@@ -137,3 +137,18 @@ class SparkDataCheck:
                 .otherwise(F.col(column).isin(levels))
         )
         return self
+    
+    # Create a Boolean column to check for missing values in a provided column
+    def check_missing(self, column):
+        '''
+        Append a Boolean column indicating whether a user supplied column has missing (Null) values.
+        '''
+        # Check if each value in a column is Null
+        self.df = self.df.withColumn(
+            f"{column}_is_null",
+            F.col(column).isNull()
+        )
+        return self
+    
+    ####################################
+    # Summarization Methods
