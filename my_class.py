@@ -65,5 +65,45 @@ class SparkDataCheck:
     #create boolean column based on numeric bounds
     def check_numeric_range(self, column: str, lower: str = None, upper: str = None):
         '''
-        Append boolean column indicating whether numeric values fall within bound
+        Append boolean column indicating whether numeric values fall within bound.
+        
+        The function allows the users to supply a single column and a lower and upper bound value.
+        The method will check that at least one lower or upper is provided.
+        Any Null values are returned as Null.
+        The method will also checks if the user supplied a non-numeric column.
+        If a non-numeric column is provided, then a message is printed and the dataframe is returned without modification.
+        
+        The function returns the dataframe with an appended column of Boolean values.
         '''
+        
+        # Check if the column is numeric.
+        # Grab the data type of the column provided
+        col_type = None
+        for name, dtype in self.df.dtypes: # Unpacks the list tuple from .dtypes
+            if name == column:
+                col_type = dtype
+                break
+        
+        numeric_types = ["float", "int", "longint", "bigint", "double", "integer"] # Allowed numeric types
+        
+        # Logic to check if col_type is in our numeric_types list
+        if col_type is None or not any(type in col_type.lower() for type in numeric_types):
+            print(f"Message: Column '{column}' is non-numeric.")
+            return self # Return dataframe without modifications
+        
+        # Check that at least one of lower or upper is provided
+        if lower is None and upper is None:
+            return self
+        
+        # Check if the numeric column is within user defined bounds
+        col_obj = F.col(column) # PySpark Column Object
+        if lower is not None and upper is not None: # Check that both lower and upper provided
+            condition = col_obj.between(lower, upper)
+        elif lower is not None: # Check that lower was provided
+            condition = col_obj >= lower
+        else: # Check that upper was provided
+            condition = col_obj <= upper
+            
+        # Create new column with the Boolean values
+        self.df = self.df.withColumn(f"{column}_in_bounds", condition)
+        return self
