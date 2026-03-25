@@ -211,3 +211,33 @@ class SparkDataCheck:
             
         # Return final pdf
         return final_pdf
+    
+    
+    # Counting Summarization Method
+    def report_counts(self, col1, col2 = None):
+        '''
+        A summarization method to report the counts associated with one or two string columns.
+        The function requires one column to be provided, but users have the option to include a second argument for a second string column.
+        The function will check that the columns are string columns. 
+        If so, they will report the counts for the combinations of levels of each variable or the single variable.
+        If not, then a message will be printed if the column is numeric.
+        '''
+        
+        # Create a list of the provided columns
+        columns = [col1] if col2 is None else [col1, col2] 
+        allowed_types = ['string', 'boolean']
+        
+        for col in columns:
+            # Grab the data type of the column provided
+            col_type = None
+            for name, dtype in self.df.dtypes: # Unpacks the list tuple from .dtypes
+                if name == col:
+                    col_type = dtype
+                    break
+                    
+            # Check if col_type is a string
+            if col_type not in allowed_types:
+                print(f"Message: Column '{col}' is numeric/non-string.")
+            
+        # Return the counts of each provided column as a panda data frame
+        return self.df.groupBy(columns).count().toPandas()
