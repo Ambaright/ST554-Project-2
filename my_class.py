@@ -62,10 +62,10 @@ class SparkDataCheck:
     #################################
     # Validation methods
     
-    #create boolean column based on numeric bounds
+    # Create boolean column based on numeric bounds
     def check_numeric_range(self, column: str, lower: str = None, upper: str = None):
         '''
-        Append boolean column indicating whether numeric values fall within bound.
+        Append a Boolean column indicating whether numeric values fall within bound.
         
         The function allows the users to supply a single column and a lower and upper bound value.
         The method will check that at least one lower or upper is provided.
@@ -76,7 +76,6 @@ class SparkDataCheck:
         The function returns the dataframe with an appended column of Boolean values.
         '''
         
-        # Check if the column is numeric.
         # Grab the data type of the column provided
         col_type = None
         for name, dtype in self.df.dtypes: # Unpacks the list tuple from .dtypes
@@ -106,4 +105,35 @@ class SparkDataCheck:
             
         # Create new column with the Boolean values
         self.df = self.df.withColumn(f"{column}_in_bounds", condition)
+        return self
+    
+    # Create a boolean column based on string levels
+    def check_string_levels(self, column, levels):
+        '''
+        Append a Boolean column indicating whether a user supplied string column falls within a
+        user specified set of levles. Return the dataframe with the appended columns of Boolean values.
+        
+        Null values, return Null.
+        If the user supplies a non-string column, a message is printed and the df is returned without modification.
+        '''
+        
+        # Grab the data type of the column provided
+        col_type = None
+        for name, dtype in self.df.dtypes: # Unpacks the list tuple from .dtypes
+            if name == column:
+                col_type = dtype
+                break
+                
+        # Check if the column is a string
+        if col_type != 'string':
+            print(f"Message: Column '{column}' is not a string column.")
+            return self
+        
+        # If the column is a string, append a Boolean column that determines if the string falls within the specified set of levels.
+        # Also, ensure that Null values are returned Null
+        self.df = self.df.withColumn(
+            f"{column}_valid_level",
+            F.when(F.col(column).isNull(), None)
+                .otherwise(F.col(column).isin(levels))
+        )
         return self
