@@ -38,6 +38,8 @@ class SparkDataCheck:
                              format = "csv",
                              sep = ",",
                              inferSchema = "true",
+                             ignoreLeadingWhiteSpace = "true",
+                             ignoreTrailingWhiteSpace = "true",
                              header = "true")
         return cls(df)
 
@@ -95,7 +97,7 @@ class SparkDataCheck:
             return self
         
         # Check if the numeric column is within user defined bounds
-        col_obj = F.col(column) # PySpark Column Object
+        col_obj = F.col(f"`{column}`") # PySpark Column Object
         if lower is not None and upper is not None: # Check that both lower and upper provided
             condition = col_obj.between(lower, upper)
         elif lower is not None: # Check that lower was provided
@@ -133,8 +135,8 @@ class SparkDataCheck:
         # Also, ensure that Null values are returned Null
         self.df = self.df.withColumn(
             f"{column}_valid_level",
-            F.when(F.col(column).isNull(), None)
-                .otherwise(F.col(column).isin(levels))
+            F.when(F.col(f"`{column}`").isNull(), None)
+                .otherwise(F.col(f"`{column}`").isin(levels))
         )
         return self
     
@@ -146,7 +148,7 @@ class SparkDataCheck:
         # Check if each value in a column is Null
         self.df = self.df.withColumn(
             f"{column}_is_null",
-            F.col(column).isNull()
+            F.col(f"`{column}`").isNull()
         )
         return self
     
@@ -194,8 +196,8 @@ class SparkDataCheck:
             
             # Perform min and max and convert to Pandas
             col_summary = working_df.agg(
-                F.min(col).alias(f"{col}_min"),
-                F.max(col).alias(f"{col}_max")
+                F.min(f"`{col}`").alias(f"{col}_min"),
+                F.max(f"`{col}`").alias(f"{col}_max")
             ).toPandas()
             
             # Append col_summary to pdf list
@@ -240,4 +242,5 @@ class SparkDataCheck:
                 print(f"Message: Column '{col}' is numeric/non-string.")
             
         # Return the counts of each provided column as a panda data frame
-        return self.df.groupBy(columns).count().toPandas()
+        safe_cols = [f"`{col}`" for col in columns]
+        return self.df.groupBy(*safe_cols).count().toPandas()
