@@ -240,6 +240,7 @@ class SparkDataCheck:
             # Check if col_type is a string
             if col_type not in allowed_types:
                 print(f"Message: Column '{col}' is numeric/non-string.")
+                return None
             
         # Return the counts of each provided column as a panda data frame
         safe_cols = [f"`{col}`" for col in columns]
